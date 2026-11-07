@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: caching-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: caching
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d caching"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: caching-redis
+    restart: unless-stopped
+    # TLS only (plain port disabled), password required
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-redispass}
+      --port 0
+      --tls-port 6379
+      --tls-cert-file /certs/redis.crt
+      --tls-key-file /certs/redis.key
+      --tls-ca-cert-file /certs/ca.crt
+      --tls-auth-clients no
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./certs/redis:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --tls --cacert /certs/ca.crt -a $${REDIS_PASSWORD:-redispass} --no-auth-warning ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
