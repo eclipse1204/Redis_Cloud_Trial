@@ -35,5 +35,5 @@ build/
 ### Local TLS certs ###
 certs/
 
-### Local secrets ###
-secrets.properties
+### Local env / secrets ###
+.env
